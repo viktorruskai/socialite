@@ -21,6 +21,13 @@ class User extends AbstractUser
     public $refreshToken;
 
     /**
+     * The number of seconds the refresh token is valid for.
+     *
+     * @var int
+     */
+    public $refreshTokenExpiresIn;
+
+    /**
      * The number of seconds the access token is valid for.
      *
      * @var int
@@ -56,6 +63,21 @@ class User extends AbstractUser
     public function setRefreshToken($refreshToken)
     {
         $this->refreshToken = $refreshToken;
+
+        return $this;
+    }
+
+    /**
+     * Set the number of seconds the refresh token is valid for.
+     *
+     * @param  int  $refreshTokenExpiresIn
+     * @return $this
+     */
+    public function setRefreshTokenExpiresIn($refreshTokenExpiresIn = null)
+    {
+        if ($refreshTokenExpiresIn !== null) {
+            $this->refreshTokenExpiresIn = $refreshTokenExpiresIn;
+        }
 
         return $this;
     }

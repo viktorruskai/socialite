@@ -244,6 +244,7 @@ abstract class AbstractProvider implements ProviderContract
 
         return $this->user->setToken($token)
                     ->setRefreshToken(Arr::get($response, 'refresh_token'))
+                    ->setRefreshTokenExpiresIn(Arr::get($response, 'refresh_token_expires_in'))
                     ->setExpiresIn(Arr::get($response, 'expires_in'))
                     ->setApprovedScopes(explode($this->scopeSeparator, Arr::get($response, 'scope', '')));
     }
