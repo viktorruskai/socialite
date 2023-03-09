@@ -108,8 +108,18 @@ abstract class AbstractProvider implements ProviderContract
      */
     protected $user;
 
+    /**
+     * Use custom state
+     *
+     * @var array
+     */
     protected $state;
 
+    /**
+     * Sign state with key
+     *
+     * @var string
+     */
     protected $signKey;
     /**
      * @var array
@@ -119,7 +129,7 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * Create a new provider instance.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param  \Illuminate\Http\Request  $request
      * @param  string  $clientId
      * @param  string  $clientSecret
      * @param  string  $redirectUrl
