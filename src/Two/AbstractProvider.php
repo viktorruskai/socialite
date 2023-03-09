@@ -187,7 +187,7 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * Redirect the user of the application to the provider's authentication screen.
      *
-     * @return RedirectResponse
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function redirect()
     {
@@ -492,7 +492,7 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * Set the request instance.
      *
-     * @param  \Illuminate\Http\Request $request
+     * @param  \Illuminate\Http\Request  $request
      * @return $this
      */
     public function setRequest(Request $request)
