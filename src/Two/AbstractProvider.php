@@ -20,14 +20,14 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * The HTTP request instance.
      *
-     * @var Request
+     * @var \Illuminate\Http\Request
      */
     protected $request;
 
     /**
      * The HTTP Client instance.
      *
-     * @var Client
+     * @var \GuzzleHttp\Client
      */
     protected $httpClient;
 
@@ -104,7 +104,7 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * The cached user instance.
      *
-     * @var User|null
+     * @var \Laravel\Socialite\Two\User|null
      */
     protected $user;
 
@@ -119,7 +119,7 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * Create a new provider instance.
      *
-     * @param Request $request
+     * @param \Illuminate\Http\Request $request
      * @param  string  $clientId
      * @param  string  $clientSecret
      * @param  string  $redirectUrl
@@ -162,7 +162,7 @@ abstract class AbstractProvider implements ProviderContract
      * Map the raw user array to a Socialite User instance.
      *
      * @param  array  $user
-     * @return User
+     * @return \Laravel\Socialite\Two\User
      */
     abstract protected function mapUserToObject(array $user);
 
@@ -305,7 +305,7 @@ abstract class AbstractProvider implements ProviderContract
      * Get a Social User instance from a known access token.
      *
      * @param  string  $token
-     * @return User
+     * @return \Laravel\Socialite\Two\User
      */
     public function userFromToken($token)
     {
@@ -465,7 +465,7 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * Get a instance of the Guzzle HTTP client.
      *
-     * @return Client
+     * @return \GuzzleHttp\Client
      */
     protected function getHttpClient()
     {
@@ -479,7 +479,7 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * Set the Guzzle HTTP client instance.
      *
-     * @param Client $client
+     * @param  \GuzzleHttp\Client  $client
      * @return $this
      */
     public function setHttpClient(Client $client)
@@ -492,7 +492,7 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * Set the request instance.
      *
-     * @param Request $request
+     * @param  \Illuminate\Http\Request $request
      * @return $this
      */
     public function setRequest(Request $request)
