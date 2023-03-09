@@ -121,7 +121,10 @@ abstract class AbstractProvider implements ProviderContract
      * @var string
      */
     protected $signKey;
+
     /**
+     * This field is filled when user goes from Social Network and uses signed state
+     *
      * @var array
      */
     protected $decodedState;
@@ -352,6 +355,8 @@ abstract class AbstractProvider implements ProviderContract
     }
 
     /**
+     * Return decoded and verified state
+     *
      * @return array|null
      */
     public function getDecodedState()
