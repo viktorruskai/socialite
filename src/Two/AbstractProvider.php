@@ -2,6 +2,9 @@
 
 namespace Laravel\Socialite\Two;
 
+use Exception;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use GuzzleHttp\Client;
 use GuzzleHttp\RequestOptions;
 use Illuminate\Http\RedirectResponse;
@@ -12,6 +15,8 @@ use Laravel\Socialite\Contracts\Provider as ProviderContract;
 
 abstract class AbstractProvider implements ProviderContract
 {
+    const ALGORITHM = 'HS256';
+
     /**
      * The HTTP request instance.
      *
@@ -104,6 +109,27 @@ abstract class AbstractProvider implements ProviderContract
     protected $user;
 
     /**
+     * Use custom state
+     *
+     * @var array
+     */
+    protected $state;
+
+    /**
+     * Sign state with key
+     *
+     * @var string
+     */
+    protected $signKey;
+
+    /**
+     * This field is filled when user goes from Social Network and uses signed state
+     *
+     * @var array
+     */
+    protected $decodedState;
+
+    /**
      * Create a new provider instance.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -153,6 +179,24 @@ abstract class AbstractProvider implements ProviderContract
      */
     abstract protected function mapUserToObject(array $user);
 
+    public function setSignKey($key)
+    {
+        $this->signKey = $key;
+
+        return $this;
+    }
+
+    public function signState($state, $signKey = null)
+    {
+        $this->state = $state;
+
+        if ($signKey) {
+            $this->signKey = $signKey;
+        }
+
+        return $this;
+    }
+
     /**
      * Redirect the user of the application to the provider's authentication screen.
      *
@@ -163,11 +207,24 @@ abstract class AbstractProvider implements ProviderContract
         $state = null;
 
         if ($this->usesState()) {
-            $this->request->session()->put('state', $state = $this->getState());
+            if ($this->usesSignedState()) {
+                $state = $this->state;
+            } else {
+                $this->request->session()->put('state', $state = $this->getState());
+            }
         }
 
         if ($this->usesPKCE()) {
-            $this->request->session()->put('code_verifier', $this->getCodeVerifier());
+            if ($this->usesSignedState()) {
+                if (!$this->state) {
+                    $this->state = [];
+                }
+
+                $this->state['code_verifier'] = $this->getCodeVerifier();
+                $state = $this->state;
+            } else {
+                $this->request->session()->put('code_verifier', $this->getCodeVerifier());
+            }
         }
 
         return new RedirectResponse($this->getAuthUrl($state));
@@ -201,7 +258,11 @@ abstract class AbstractProvider implements ProviderContract
         ];
 
         if ($this->usesState()) {
-            $fields['state'] = $state;
+            if ($this->usesSignedState()) {
+                $fields['state'] = JWT::encode((array)$state, $this->signKey, self::ALGORITHM);
+            } else {
+                $fields['state'] = $state;
+            }
         }
 
         if ($this->usesPKCE()) {
@@ -243,6 +304,10 @@ abstract class AbstractProvider implements ProviderContract
             $token = Arr::get($response, 'access_token')
         ));
 
+        if ($this->decodedState) {
+            $this->user->state = $this->decodedState;
+        }
+
         return $this->user->setToken($token)
                     ->setRefreshToken(Arr::get($response, 'refresh_token'))
                     ->setExpiresIn(Arr::get($response, 'expires_in'))
@@ -273,9 +338,30 @@ abstract class AbstractProvider implements ProviderContract
             return false;
         }
 
+        // Signed state
+        if ($this->signKey && $this->request->has('state')) {
+            try {
+                $this->decodedState = (array)JWT::decode($this->request->input('state'), new Key($this->signKey, self::ALGORITHM));
+            } catch (Exception $e) {
+                return true;
+            }
+
+            return false;
+        }
+
         $state = $this->request->session()->pull('state');
 
         return empty($state) || $this->request->input('state') !== $state;
+    }
+
+    /**
+     * Return decoded and verified state
+     *
+     * @return array|null
+     */
+    public function getDecodedState()
+    {
+        return $this->decodedState ?? null;
     }
 
     /**
@@ -322,7 +408,11 @@ abstract class AbstractProvider implements ProviderContract
         ];
 
         if ($this->usesPKCE()) {
-            $fields['code_verifier'] = $this->request->session()->pull('code_verifier');
+            if ($this->decodedState) {
+                $fields['code_verifier'] = $this->decodedState['code_verifier'] ?? null;
+            } else {
+                $fields['code_verifier'] = $this->request->session()->pull('code_verifier');
+            }
         }
 
         return $fields;
@@ -438,6 +528,16 @@ abstract class AbstractProvider implements ProviderContract
     }
 
     /**
+     * Determine if the provider is operating with signed state.
+     *
+     * @return bool
+     */
+    protected function usesSignedState()
+    {
+        return $this->state && $this->signKey;
+    }
+
+    /**
      * Determine if the provider is operating as stateless.
      *
      * @return bool
@@ -508,7 +608,11 @@ abstract class AbstractProvider implements ProviderContract
      */
     protected function getCodeChallenge()
     {
-        $hashed = hash('sha256', $this->request->session()->get('code_verifier'), true);
+        if ($this->usesSignedState()) {
+            $hashed = hash('sha256', $this->state['code_verifier'], true);
+        } else {
+            $hashed = hash('sha256', $this->request->session()->get('code_verifier'), true);
+        }
 
         return rtrim(strtr(base64_encode($hashed), '+/', '-_'), '=');
     }
